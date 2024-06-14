@@ -1,10 +1,12 @@
 package main
 
 import (
-    "sysmon/internal/collector"
     "sysmon/internal/alert"
     "sysmon/internal/config"
     "sysmon/internal/server"
+    "sysmon/internal/collector"
+    "github.com/shirou/gopsutil/disk"
+    "github.com/shirou/gopsutil/net"
     "time"
 )
 
@@ -23,8 +25,18 @@ func main() {
     for {
         cpuUsage := collector.CollectCPUUsage()
         memUsage := collector.CollectMemoryUsage()
-        diskUsage := collector.CollectDiskUsage()
-        netUsage := collector.CollectNetworkUsage()
+        
+        diskUsage, diskErr := collector.CollectDiskUsage()
+        if diskErr != nil {
+            // Handle disk collection error
+            diskUsage = make(map[string]*disk.UsageStat)
+        }
+
+        netUsage, netErr := collector.CollectNetworkUsage()
+        if netErr != nil {
+            // Handle network collection error
+            netUsage = make(map[string]net.IOCountersStat)
+        }
 
         if cpuUsage > cfg.Thresholds.CPU {
             alert.SendAlert("High CPU usage!")
@@ -34,12 +46,16 @@ func main() {
             alert.SendAlert("High memory usage!")
         }
 
-        if diskUsage > cfg.Thresholds.Disk {
-            alert.SendAlert("High disk usage!")
+        for _, usage := range diskUsage {
+            if usage.UsedPercent > cfg.Thresholds.Disk {
+                alert.SendAlert("High disk usage on " + usage.Path)
+            }
         }
 
-        if netUsage > cfg.Thresholds.Network {
-            alert.SendAlert("High network usage!")
+        for _, usage := range netUsage {
+            if float64(usage.BytesSent+usage.BytesRecv) > cfg.Thresholds.Network {
+                alert.SendAlert("High network usage on " + usage.Name)
+            }
         }
 
         // Sleep for 5 seconds

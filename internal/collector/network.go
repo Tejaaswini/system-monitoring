@@ -1,18 +1,18 @@
 package collector
 
 import (
-    "fmt"
     "github.com/shirou/gopsutil/net"
 )
 
-func CollectNetworkUsage() float64 {
-    ioCounters, err := net.IOCounters(false)
+func CollectNetworkUsage() (map[string]net.IOCountersStat, error) {
+    counters, err := net.IOCounters(true)
     if err != nil {
-        fmt.Println("Error getting network usage:", err)
-        return 0
+        return nil, err
     }
-    if len(ioCounters) > 0 {
-        return float64(ioCounters[0].BytesSent+ioCounters[0].BytesRecv) / 1024 // in KB
+
+    usage := make(map[string]net.IOCountersStat)
+    for _, counter := range counters {
+        usage[counter.Name] = counter
     }
-    return 0
+    return usage, nil
 }

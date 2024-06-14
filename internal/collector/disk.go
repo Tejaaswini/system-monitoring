@@ -1,15 +1,22 @@
 package collector
 
 import (
-	"fmt"
-	"github.com/shirou/gopsutil/disk"
+    "github.com/shirou/gopsutil/disk"
 )
 
-func CollectDiskUsage() float64 {
-	diskStat, err := disk.Usage("/")
-	if err != nil {
-		fmt.Println("Error getting disk usage:", err)
-		return 0
-	}
-	return diskStat.UsedPercent
+func CollectDiskUsage() (map[string]*disk.UsageStat, error) {
+    partitions, err := disk.Partitions(false)
+    if err != nil {
+        return nil, err
+    }
+
+    usage := make(map[string]*disk.UsageStat)
+    for _, partition := range partitions {
+        usageStat, err := disk.Usage(partition.Mountpoint)
+        if err != nil {
+            continue
+        }
+        usage[partition.Mountpoint] = usageStat
+    }
+    return usage, nil
 }
