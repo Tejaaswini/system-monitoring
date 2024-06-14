@@ -1,0 +1,13 @@
+thresholds:
+  cpu: 80.0
+  memory: 80.0
+  disk: 80.0
+  network: 1000.0 # in KBps
+alerts:
+  email:
+    enabled: true
+    smtp_server: " "
+    smtp_port: 587
+    sender_email: " "
+    sender_password: " "
+    recipient_email: " "
