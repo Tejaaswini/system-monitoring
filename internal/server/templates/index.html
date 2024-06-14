@@ -31,6 +31,7 @@
             border-radius: 8px;
             box-shadow: 0 12px 4px rgba(0, 0, 0, 0.1);
             width: 800px;
+            cursor: pointer;
         }
         svg {
             display: block;
@@ -46,21 +47,23 @@
     <h1>Realtime System Metrics</h1>
     <div id="cpu" class="chart">
         <h2>CPU Usage</h2>
-        <svg width="800" height="300"></svg>
+        <svg width="800" height="300" onclick="showDetails('cpu')"></svg>
     </div>
     <div id="memory" class="chart">
         <h2>Memory Usage</h2>
-        <svg width="800" height="300"></svg>
+        <svg width="800" height="300" onclick="showDetails('memory')"></svg>
     </div>
     <div id="disk" class="chart">
         <h2>Disk Usage</h2>
-        <svg width="800" height="300"></svg>
+        <svg width="800" height="300" onclick="showDetails('disk')"></svg>
     </div>
     <div id="network" class="chart">
         <h2>Network Usage</h2>
-        <svg width="800" height="300"></svg>
+        <svg width="800" height="300" onclick="showDetails('network')"></svg>
     </div>
     <script>
+        let metricsData;
+
         async function fetchData() {
             const response = await fetch('/metrics');
             return await response.json();
@@ -112,8 +115,8 @@
         }
 
         async function updateCharts() {
-            const data = await fetchData();
-            const formatData = (key) => data[key].map(d => ({
+            metricsData = await fetchData();
+            const formatData = (key) => metricsData[key].map(d => ({
                 time: new Date(d.time),
                 value: d.value
             }));
@@ -124,6 +127,13 @@
             drawChart('network', formatData('network'), 'Network Usage (KBps)');
 
             setTimeout(updateCharts, 5000);
+        }
+
+        function showDetails(type) {
+            const details = metricsData[type]
+                .map(d => `Time: ${new Date(d.time).toLocaleString()}, Value: ${d.value}`)
+                .join('\n');
+            alert(`${type.toUpperCase()} Details:\n\n${details}`);
         }
 
         updateCharts();
