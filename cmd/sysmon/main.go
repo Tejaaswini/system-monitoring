@@ -18,6 +18,7 @@ func main() {
 
     // Start the server in a separate goroutine
     go server.StartServer()
+    go server.CollectMetrics()
 
     for {
         cpuUsage := collector.CollectCPUUsage()

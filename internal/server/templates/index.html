@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Realtime System Metrics</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            padding: 20px;
+            margin: 0;
+            background-color: rgb(145, 145, 145);
+            color: white;
+            width: 100%;
+            text-align: center;
+        }
+        .chart {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 12px 4px rgba(0, 0, 0, 0.1);
+            width: 800px;
+        }
+        svg {
+            display: block;
+            margin: auto;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Realtime System Metrics</h1>
+    <div id="cpu" class="chart">
+        <h2>CPU Usage</h2>
+        <svg width="800" height="300"></svg>
+    </div>
+    <div id="memory" class="chart">
+        <h2>Memory Usage</h2>
+        <svg width="800" height="300"></svg>
+    </div>
+    <div id="disk" class="chart">
+        <h2>Disk Usage</h2>
+        <svg width="800" height="300"></svg>
+    </div>
+    <div id="network" class="chart">
+        <h2>Network Usage</h2>
+        <svg width="800" height="300"></svg>
+    </div>
+    <script>
+        async function fetchData() {
+            const response = await fetch('/metrics');
+            return await response.json();
+        }
+
+        function drawChart(id, data, label) {
+            const svg = d3.select(`#${id} svg`);
+            svg.selectAll("*").remove();
+
+            const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+            const width = +svg.attr("width") - margin.left - margin.right;
+            const height = +svg.attr("height") - margin.top - margin.bottom;
+
+            const x = d3.scaleTime()
+                .domain(d3.extent(data, d => d.time))
+                .range([margin.left, width - margin.right]);
+
+            const y = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.value)]).nice()
+                .range([height - margin.bottom, margin.top]);
+
+            const line = d3.line()
+                .x(d => x(d.time))
+                .y(d => y(d.value));
+
+            const g = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            g.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+
+            g.append("g")
+                .call(d3.axisLeft(y));
+
+            g.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("d", line);
+
+            g.append("text")
+                .attr("x", width / 2)
+                .attr("y", -margin.top / 4)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .text(label);
+        }
+
+        async function updateCharts() {
+            const data = await fetchData();
+            const formatData = (key) => data[key].map(d => ({
+                time: new Date(d.time),
+                value: d.value
+            }));
+
+            drawChart('cpu', formatData('cpu'), 'CPU Usage (%)');
+            drawChart('memory', formatData('memory'), 'Memory Usage (%)');
+            drawChart('disk', formatData('disk'), 'Disk Usage (%)');
+            drawChart('network', formatData('network'), 'Network Usage (KBps)');
+
+            setTimeout(updateCharts, 5000);
+        }
+
+        updateCharts();
+    </script>
+</body>
+</html>
